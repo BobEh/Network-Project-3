@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/vec3.hpp>
 #include <string>
+#include <vector>
 #include "iObject.h"
 
 class cGameObject : public iObject
@@ -61,6 +62,10 @@ public:
 	void setDisableDepthBufferTest(bool disableDepthBufferTest);
 	void setDisableDepthBufferWrite(bool disableDwpthBufferWrite);
 
+	void tempAddComponent();
+
+	template <class T> T* AddComponent();
+
 private:
 	static unsigned int next_uniqueID;
 	unsigned int _m_uniqueID;
@@ -89,6 +94,8 @@ private:
 	bool _isVisible;
 	bool _disableDepthBufferTest;
 	bool _disableDepthBufferWrite;
+
+	std::vector<Component*> components;
 };
 
 #endif

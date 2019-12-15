@@ -218,6 +218,17 @@ cSphereObject::cSphereObject()
 	return;
 }
 
+template <class T> T* cSphereObject::AddComponent()
+{
+	T* newComponent = new T();
+	assert(newComponent);
+
+	if (dynamic_cast<Component*>(newComponent) == 0) return 0;		// Check if the provided class type is a Component.
+	this->components.push_back(newComponent);
+
+	return newComponent;
+}
+
 
 unsigned int cSphereObject::getUniqueID(void)
 {

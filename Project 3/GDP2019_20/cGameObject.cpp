@@ -212,6 +212,16 @@ cGameObject::cGameObject()
 
 	return;
 }
+template <class T> T* cGameObject::AddComponent()
+{
+	T* newComponent = new T();
+	assert(newComponent);
+
+	if (dynamic_cast<Component*>(newComponent) == 0) return 0;		// Check if the provided class type is a Component.
+	this->components.push_back(newComponent);
+
+	return newComponent;
+}
 
 
 unsigned int cGameObject::getUniqueID(void)

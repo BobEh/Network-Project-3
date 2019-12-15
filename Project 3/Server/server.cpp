@@ -132,8 +132,7 @@ void Server::BroadcastUpdate(void)
 		memcpy(&(buffer[i * 8 + 8]), &z, sizeof(float));
 	}
 
-	int result = sendto(mListenSocket, buffer, 12, 0,
-		(struct sockaddr*) & (playersVec[0].si_other), sizeof(playersVec[0].si_other));
+	int result = sendto(mListenSocket, buffer, 12, 0,(struct sockaddr*) & (playersVec[0].si_other), sizeof(playersVec[0].si_other));
 }
 
 Player* GetPlayerByPort(unsigned short port, struct sockaddr_in si_other)

@@ -4,6 +4,8 @@
 #include <glm/vec3.hpp>
 #include <string>
 
+#include "Component.h"
+
 class iObject
 {
 public:
@@ -57,4 +59,12 @@ public:
 	virtual void setIsVisible(bool isVisible) = 0;
 	virtual void setDisableDepthBufferTest(bool disableDepthBufferTest) = 0;
 	virtual void setDisableDepthBufferWrite(bool disableDwpthBufferWrite) = 0;
+
+	template <class T> T* AddComponent();
 };
+
+template<class T>
+inline T* iObject::AddComponent()
+{
+	return NULL;
+}

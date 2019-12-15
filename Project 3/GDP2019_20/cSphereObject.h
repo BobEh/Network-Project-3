@@ -64,6 +64,7 @@ public:
 	void setIsVisible(bool isVisible);
 	void setDisableDepthBufferTest(bool disableDepthBufferTest);
 	void setDisableDepthBufferWrite(bool disableDwpthBufferWrite);
+	template <class T> T* AddComponent();
 
 private:
 	static unsigned int next_uniqueID;

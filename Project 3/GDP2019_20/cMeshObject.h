@@ -65,6 +65,8 @@ public:
 	void setDisableDepthBufferTest(bool disableDepthBufferTest);
 	void setDisableDepthBufferWrite(bool disableDwpthBufferWrite);
 
+	template <class T> T* AddComponent();
+
 private:
 	static unsigned int next_uniqueID;
 	unsigned int _m_uniqueID;

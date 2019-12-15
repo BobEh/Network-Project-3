@@ -24,6 +24,7 @@ public:
 	void CreateSocket(std::string ip, int port);
 	void Update();
 	void Send(char* data, int numBytes);
+	void SetVelocity(int id, float& x, float& y);
 	void SetPosition(int id, float& x, float& y);
 
 private:

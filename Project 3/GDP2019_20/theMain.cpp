@@ -108,6 +108,25 @@ std::vector<iObject*> g_vec_pBallObjects;
 std::vector<iObject*> g_vec_pPlayerObjects;
 Client mClient;
 char input[4];
+
+class Transform
+{
+public:
+	Transform();
+	glm::vec3 position;
+	glm::vec3 scale;
+	glm::quat orientation;
+};
+
+Transform::Transform()
+{
+	this->position = glm::vec3(0.0f, 101.1f, 0.0f);
+	this->scale = glm::vec3(1.0f, 1.0f, 1.0f);
+	this->orientation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+}
+
+std::vector<Transform*> transforms;
+
 std::map<std::string /*FriendlyName*/, iObject*> g_map_GameObjectsByFriendlyName;
 
 
@@ -117,11 +136,21 @@ iObject* pFindObjectByFriendlyNameMap(std::string name);
 
 //bool g_BallCollided = false;
 
-struct Player {
-	float x, y;
+class Player {
+public:
+	Player();
+	float x, z;
+	int port;
 };
 
-std::vector<Player> mPlayers;
+Player::Player()
+{
+	this->x = 0.0f;
+	this->z = 0.0f;
+	this->port = 0;
+}
+
+std::vector<Player*> mPlayers;
 
 void _PrintWSAError(const char* file, int line)
 {
@@ -135,10 +164,16 @@ void _PrintWSAError(const char* file, int line)
 	LocalFree(s);
 }
 
+void Client::SetVelocity(int id, float& x, float& y)
+{
+	x = mPlayers.at(id)->x;
+	y = mPlayers.at(id)->z;
+}
+
 void Client::SetPosition(int id, float& x, float& y)
 {
-	x = mPlayers[id].x;
-	y = mPlayers[id].y;
+	x = mPlayers.at(id)->x;
+	y = mPlayers.at(id)->z;
 }
 
 Client::Client(void) : mServerSocket(INVALID_SOCKET)
@@ -218,16 +253,22 @@ void Client::Recv(void)
 	for (int i = 0; i < numPlayers; i++) {
 		memcpy(&x, &(buffer[i * 8 + 4]), sizeof(float));
 		memcpy(&y, &(buffer[i * 8 + 8]), sizeof(float));
-		mPlayers[i].x = x;
-		mPlayers[i].y = y;
+		//SetVelocity(0, x, y);
+		//mPlayers.at(i)->setVelocity(glm::vec3(x, mPlayers.at(i)->getVelocity().y, mPlayers.at(i)->getVelocity().z));
+		//mPlayers.at(i)->setVelocity(glm::vec3(mPlayers.at(i)->getVelocity().x, mPlayers.at(i)->getVelocity().y, y));
+
+		mPlayers[i]->x = x;
+		mPlayers[i]->z = y;
 	}
 
+	//player1->setPositionXYZ(glm::vec3(player1->getPositionXYZ().x + mPlayers[0].x, 101.1f, player1->getPositionXYZ().z + mPlayers[0].y));
+	//std::cout << mPlayers[0].x << " " << mPlayers[0].y << std::endl;
 	//unsigned short port = si_other.sin_port;
 	//printf("%d : %hu received %d bytes\n", mServerSocket, port, result);
 
 	printf("%d players: {", numPlayers);
 	for (int i = 0; i < numPlayers; i++) {
-		printf(" {x: %.2f, y: %.2f}", mPlayers[i].x, mPlayers[i].y);
+		printf(" {x: %.2f, z: %.2f}", mPlayers.at(i)->x, mPlayers.at(i)->z);
 	}
 	printf(" }\n");
 }
@@ -653,18 +694,37 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 	if (isCtrlKeyDownByAlone(mods))
 	{
 		// move the shpere
-		iObject* pSphere = pFindObjectByFriendlyName("Sphere#1");
-		if (key == GLFW_KEY_D)
+		iObject* pSphere = pFindObjectByFriendlyName("player1");
+		if (key == GLFW_KEY_D && action == GLFW_PRESS)
 		{
-			input[2] = 1;
+			if (input[3] == 0)
+			{
+				input[3] = 1;
+				//pSphere->setPositionXYZ(glm::vec3(pSphere->getPositionXYZ().x - 5.0f, pSphere->getPositionXYZ().y, pSphere->getPositionXYZ().z));
+			}
+			else
+			{
+				input[3] = 0;
+				
+			}
 			//pSphere->rotationXYZ -= glm::vec3(CAMERASPEED, 0.0f, 0.0f);
-			pSphere->setVelocity(pSphere->getVelocity() - glm::vec3(MOVESPEED, 0.0f, 0.0f));		// Move the camera -0.01f units
+			//pSphere->setVelocity(pSphere->getVelocity() - glm::vec3(MOVESPEED, 0.0f, 0.0f));		// Move the camera -0.01f units
 		}
-		if (key == GLFW_KEY_A)
+		if (key == GLFW_KEY_A && action == GLFW_PRESS)
 		{
-			input[3] = 1;
+			if (input[2] == 0)
+			{
+				input[2] = 1;
+				//pSphere->setVelocity(glm::vec3(0.0f, pSphere->getVelocity().y, pSphere->getVelocity().z));
+				//pSphere->setPositionXYZ(glm::vec3(pSphere->getPositionXYZ().x + 5.0f, pSphere->getPositionXYZ().y, pSphere->getPositionXYZ().z));
+			}
+			else
+			{
+				input[2] = 0;
+				//pSphere->setVelocity(glm::vec3(0.0f, pSphere->getVelocity().y, pSphere->getVelocity().z));
+			}
 			//pSphere->rotationXYZ += glm::vec3(CAMERASPEED, 0.0f, 0.0f);
-			pSphere->setVelocity(pSphere->getVelocity() + glm::vec3(MOVESPEED, 0.0f, 0.0f));		// Move the camera +0.01f units
+			//pSphere->setVelocity(pSphere->getVelocity() + glm::vec3(MOVESPEED, 0.0f, 0.0f));		// Move the camera +0.01f units
 		}
 
 		if (key == GLFW_KEY_M && action == GLFW_PRESS)
@@ -698,15 +758,36 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 		//}
 
 		// Move the camera (W & S for towards and away, along the z axis)
-		if (key == GLFW_KEY_S)
+		if (key == GLFW_KEY_S && action == GLFW_PRESS)
 		{
-			input[1] = 1;
-			pSphere->setVelocity(pSphere->getVelocity() - glm::vec3(0.0f, 0.0f, MOVESPEED));		// Move the camera -0.01f units
+			if (input[1] == 0)
+			{
+				input[1] = 1;
+				//pSphere->setVelocity(pSphere->getVelocity() - glm::vec3(0.0f, 0.0f, MOVESPEED));		// Move the camera -0.01f units
+			}
+			else
+			{
+				input[1] = 0;
+			}
 		}
-		if (key == GLFW_KEY_W)
+		if (key == GLFW_KEY_W && action == GLFW_PRESS)
 		{
-			input[0] = 1;
-			pSphere->setVelocity(pSphere->getVelocity() + glm::vec3(0.0f, 0.0f, MOVESPEED));		// Move the camera +0.01f units
+			if (input[0] == 0)
+			{
+				input[0] = 1;
+				//pSphere->setVelocity(pSphere->getVelocity() + glm::vec3(0.0f, 0.0f, MOVESPEED));		// Move the camera +0.01f units
+			}
+			else
+			{
+				input[0] = 0;
+			}
+		}
+		iObject* player1 = pFindObjectByFriendlyName("player1");
+		iObject* theBullet = pFindObjectByFriendlyName("bullet");
+		if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+		{
+			theBullet->setPositionXYZ(player1->getPositionXYZ());
+			theBullet->setVelocity(glm::vec3(0.0f, 4.0f, 40.0f));
 		}
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		{
@@ -727,6 +808,14 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 		{
 			pSphere->setVelocity(pSphere->getVelocity() - glm::vec3(0.0f, 0.0f, MOVESPEED));
 			pSphere->setVelocity(pSphere->getVelocity() - glm::vec3(MOVESPEED, 0.0f, 0.0f));
+		}
+
+		if (key == GLFW_KEY_R && action == GLFW_PRESS)
+		{
+			for (int i = 0; i < g_vec_pPlayerObjects.size(); i++)
+			{
+				g_vec_pPlayerObjects.at(i)->setObjectColourRGBA(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+			}
 		}
 
 		if (key == GLFW_KEY_1)
@@ -1266,23 +1355,130 @@ int main(void)
 
 	// Create our player
 
-	mClient.CreateSocket("127.0.0.1", 5150);
+	iObject* player1Bullet = pFactory->CreateObject("sphere");
+	player1Bullet->setMeshName("sphere");
+	player1Bullet->setFriendlyName("bullet");	// We use to search 
+	player1Bullet->setPositionXYZ(glm::vec3(0.0f, 0.1f, -30.0f));
+	player1Bullet->setRotationXYZ(glm::vec3(0.0f, 0.0f, 0.0f));
+	player1Bullet->setScale(1.0f);
+	player1Bullet->setObjectColourRGBA(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	player1Bullet->setVelocity(glm::vec3(0.0f, 0.0f, 0.0f));
+	player1Bullet->setAccel(glm::vec3(0.0f, 0.0f, 0.0f));
+	player1Bullet->set_SPHERE_radius(1.0f);
+	player1Bullet->setInverseMass(1.0f);
+	//	pSphere->inverseMass = 0.0f;			// Sphere won't move
+	player1Bullet->setIsVisible(true);
+	player1Bullet->setIsWireframe(false);
+	::g_vec_pGameObjects.push_back(player1Bullet);
 
 	iObject* player1 = pFactory->CreateObject("sphere");
 	player1->setMeshName("sphere");
-	player1->setFriendlyName("Sphere#1");	// We use to search 
-	player1->setPositionXYZ(glm::vec3(-25.0f, 101.1f, 1.0f));
+	player1->setFriendlyName("player1");	// We use to search 
+	player1->setPositionXYZ(glm::vec3(0.0f, 101.1f, -30.0f));
 	player1->setRotationXYZ(glm::vec3(0.0f, 0.0f, 0.0f));
 	player1->setScale(1.0f);
 	player1->setObjectColourRGBA(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	player1->setVelocity(glm::vec3(0.0f, 0.0f, 0.0f));
 	player1->setAccel(glm::vec3(0.0f, 0.0f, 0.0f));
 	player1->set_SPHERE_radius(1.0f);
-	player1->setInverseMass(0.0f);
+	player1->setInverseMass(1.0f);
 	//	pSphere->inverseMass = 0.0f;			// Sphere won't move
 	player1->setIsVisible(true);
 	player1->setIsWireframe(false);
-	::g_vec_pPlayerObjects.push_back(player1);
+	::g_vec_pGameObjects.push_back(player1);
+	Player* firstPlayer = new Player();
+	firstPlayer->x = -25.0f;
+	firstPlayer->z = 1.0f;
+	firstPlayer->port = 5150;
+	mPlayers.push_back(firstPlayer);
+
+	iObject* player2 = pFactory->CreateObject("sphere");
+	player2->setMeshName("sphere");
+	player2->setFriendlyName("Sphere#1");	// We use to search 
+	player2->setPositionXYZ(glm::vec3(-30.0f, 101.1f, 0.0f));
+	player2->setRotationXYZ(glm::vec3(0.0f, 0.0f, 0.0f));
+	player2->setScale(1.0f);
+	player2->setObjectColourRGBA(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	player2->setVelocity(glm::vec3(0.0f, 0.0f, 0.0f));
+	player2->setAccel(glm::vec3(0.0f, 0.0f, 0.0f));
+	player2->set_SPHERE_radius(1.0f);
+	player2->setInverseMass(1.0f);
+	//	pSphere->inverseMass = 0.0f;			// Sphere won't move
+	player2->setIsVisible(true);
+	player2->setIsWireframe(false);
+	::g_vec_pPlayerObjects.push_back(player2);
+	Player* secondPlayer = new Player();
+	secondPlayer->x = -25.0f;
+	secondPlayer->z = 1.0f;
+	firstPlayer->port = 5149;
+	mPlayers.push_back(secondPlayer);
+
+	iObject* player3 = pFactory->CreateObject("sphere");
+	player3->setMeshName("sphere");
+	player3->setFriendlyName("Sphere#1");	// We use to search 
+	player3->setPositionXYZ(glm::vec3(0.0f, 101.1f, 30.0f));
+	player3->setRotationXYZ(glm::vec3(0.0f, 0.0f, 0.0f));
+	player3->setScale(1.0f);
+	player3->setObjectColourRGBA(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	player3->setVelocity(glm::vec3(0.0f, 0.0f, 0.0f));
+	player3->setAccel(glm::vec3(0.0f, 0.0f, 0.0f));
+	player3->set_SPHERE_radius(1.0f);
+	player3->setInverseMass(1.0f);
+	//	pSphere->inverseMass = 0.0f;			// Sphere won't move
+	player3->setIsVisible(true);
+	player3->setIsWireframe(false);
+	::g_vec_pPlayerObjects.push_back(player3);
+	Player* thirdPlayer = new Player();
+	thirdPlayer->x = -25.0f;
+	thirdPlayer->z = 1.0f;
+	firstPlayer->port = 5148;
+	mPlayers.push_back(thirdPlayer);
+
+	iObject* player4 = pFactory->CreateObject("sphere");
+	player4->setMeshName("sphere");
+	player4->setFriendlyName("Sphere#1");	// We use to search 
+	player4->setPositionXYZ(glm::vec3(30.0f, 101.1f, 0.0f));
+	player4->setRotationXYZ(glm::vec3(0.0f, 0.0f, 0.0f));
+	player4->setScale(1.0f);
+	player4->setObjectColourRGBA(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	player4->setVelocity(glm::vec3(0.0f, 0.0f, 0.0f));
+	player4->setAccel(glm::vec3(0.0f, 0.0f, 0.0f));
+	player4->set_SPHERE_radius(1.0f);
+	player4->setInverseMass(1.0f);
+	//	pSphere->inverseMass = 0.0f;			// Sphere won't move
+	player4->setIsVisible(true);
+	player4->setIsWireframe(false);
+	::g_vec_pPlayerObjects.push_back(player4);
+	Player* fourthPlayer = new Player();
+	fourthPlayer->x = -25.0f;
+	fourthPlayer->z = 1.0f;
+	firstPlayer->port = 5147;
+	mPlayers.push_back(fourthPlayer);
+
+	input[0] = 0;
+	input[1] = 0;
+	input[2] = 0;
+	input[3] = 0;
+
+	mClient.CreateSocket("127.0.0.1", 5150);
+
+	Transform* player1Transform = new Transform();
+	Transform* player2Transform = new Transform();
+	Transform* player3Transform = new Transform();
+	Transform* player4Transform = new Transform();
+
+	transforms.push_back(player1Transform);
+	transforms.push_back(player2Transform);
+	transforms.push_back(player3Transform);
+	transforms.push_back(player4Transform);
+	//makeTransform->position = glm::vec3(0.0f, 0.0f, 0.0f);
+	//makeTransform->scale = glm::vec3(1.0f, 1.0f, 1.0f);
+	//makeTransform->orientation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+
+	//transforms.push_back(makeTransform);
+	//transforms.at(0)->position = glm::vec3(0.0f, 0.0f, 0.0f);
+	//transforms.at(0)->scale = glm::vec3(1.0f, 1.0f, 1.0f);
+	//transforms.at(0)->orientation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -1637,12 +1833,12 @@ int main(void)
 
 		std::stringstream ssTitle;
 		ssTitle
-			<< "X: "
-			<< player1->getPositionXYZ().x << ", "
-			<< "Y: "
-			<< player1->getPositionXYZ().y << ", "
-			<< "Z: "
-			<< player1->getPositionXYZ().z;
+			<< "X velocity: "
+			<< player1->getVelocity().x << ", "
+			<< "X position: "
+			<< player1->getPositionXYZ().x  << ", "
+			<< "Player X:"
+			<< mPlayers.at(0)->x;
 		//<< "Const Atten: "
 		//<< pLightsVec.at(currentLight)->getConstAtten() << " , "
 		//<< "Linear Atten: "
@@ -1663,9 +1859,31 @@ int main(void)
 		// **************************************************
 		// Loop to draw everything in the scene
 
+		pPhsyics->IntegrationStep(::g_vec_pGameObjects, 0.03f);
+		
+		mClient.Send(input, 4);
+
 		mClient.Update();
 
-		mClient.Send(input, 4);
+		for (int i = 0; i < 1; i++) {
+			player1->setPositionXYZ(glm::vec3(mPlayers.at(i)->x, player1->getPositionXYZ().y, mPlayers.at(i)->z));
+		}
+		//if (input[0] != 0)
+		//{			
+		//	input[0] = 0;
+		//}
+		//if (input[1] != 0)
+		//{
+		//	input[1] = 0;
+		//}
+		//if (input[2] != 0)
+		//{
+		//	input[2] = 0;
+		//}
+		//if (input[3] != 0)
+		//{
+		//	input[3] = 0;
+		//}
 
 
 		for (int index = 0; index != ::g_vec_pGameObjects.size(); index++)
@@ -1698,16 +1916,6 @@ int main(void)
 				shaderProgID, pTheVAOManager);
 
 		}//for (int index...
-		for (int index = 0; index != ::g_vec_pBallObjects.size(); index++)
-		{
-			glm::mat4 matModel = glm::mat4(1.0f);
-
-			iObject* pCurrentObject = ::g_vec_pBallObjects[index];
-
-			DrawObject(matModel, pCurrentObject,
-				shaderProgID, pTheVAOManager);
-
-		}//for (int index...
 		for (int index = 0; index != ::g_vec_pPlayerObjects.size(); index++)
 		{
 			glm::mat4 matModel = glm::mat4(1.0f);
@@ -1727,7 +1935,8 @@ int main(void)
 		// - Place the debug sphere "there"
 		// - Draw it.
 		pPhsyics->IntegrationStep(::g_vec_pGameObjects, 0.03f);
-		pPhsyics->IntegrationStep(::g_vec_pBallObjects, 0.03f);
+		//player1->setVelocity(glm::vec3(mPlayers.at(0)->getVelocity().x, 0.0f, mPlayers.at(0)->getVelocity().y));
+		pPhsyics->IntegrationStep(::g_vec_pPlayerObjects, 0.03f);
 
 		if (player1->getVelocity().x < 0)
 		{
@@ -1879,7 +2088,7 @@ int main(void)
 			pPhsyics->TestForCollisions(::g_vec_pGameObjects);
 			pPhsyics->TestForCollisions(::g_vec_pWallObjects);
 			pPhsyics->TestForCollisions(::g_vec_pRampObjects);
-			pPhsyics->TestForCollisions(::g_vec_pBallObjects);
+			pPhsyics->TestForCollisions(::g_vec_pPlayerObjects);
 
 			//{// Draw closest point
 			//	glm::mat4 matModel = glm::mat4(1.0f);
@@ -2024,7 +2233,7 @@ int main(void)
 			pPhsyics->TestForCollisions(::g_vec_pGameObjects);
 			pPhsyics->TestForCollisions(::g_vec_pWallObjects);
 			pPhsyics->TestForCollisions(::g_vec_pRampObjects);
-			pPhsyics->TestForCollisions(::g_vec_pBallObjects);
+			pPhsyics->TestForCollisions(::g_vec_pPlayerObjects);
 
 			//{// Draw closest point
 			//	glm::mat4 matModel = glm::mat4(1.0f);
@@ -2058,12 +2267,12 @@ int main(void)
 		//	Balls
 		//*************************************
 
-		for (int k = 0; k < ::g_vec_pBallObjects.size(); k++)
+		for (int k = 0; k < ::g_vec_pPlayerObjects.size(); k++)
 		{
 			glm::vec3 closestPoint = glm::vec3(0.0f, 0.0f, 0.0f);
 			cPhysics::sPhysicsTriangle closestTriangle;
 
-			glm::mat4 matWorld = calculateWorldMatrix(g_vec_pBallObjects.at(k));
+			glm::mat4 matWorld = calculateWorldMatrix(g_vec_pPlayerObjects.at(k));
 
 			cMesh transformedMesh;
 			pPhsyics->CalculateTransformedMesh(meshVec.at(6), matWorld, transformedMesh);
@@ -2095,7 +2304,7 @@ int main(void)
 			if (distance <= player1->get_SPHERE_radius())
 			{
 				onGround = false;
-				g_vec_pBallObjects.at(k)->setObjectColourRGBA(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+				//g_vec_pPlayerObjects.at(k)->setObjectColourRGBA(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 
 
 				//if (k == 0)
@@ -2159,7 +2368,7 @@ int main(void)
 				}
 				if (!onPlatform)
 				{*/
-				g_vec_pBallObjects.at(k)->setVelocity(player1->getVelocity() - gravity);
+				g_vec_pPlayerObjects.at(k)->setVelocity(player1->getVelocity() - gravity);
 				player1->setVelocity((reflectionVec * speed) - gravity);
 
 				//}
@@ -2173,7 +2382,7 @@ int main(void)
 			pPhsyics->TestForCollisions(::g_vec_pGameObjects);
 			pPhsyics->TestForCollisions(::g_vec_pWallObjects);
 			pPhsyics->TestForCollisions(::g_vec_pRampObjects);
-			pPhsyics->TestForCollisions(::g_vec_pBallObjects);
+			pPhsyics->TestForCollisions(::g_vec_pPlayerObjects);
 
 			//{// Draw closest point
 			//	glm::mat4 matModel = glm::mat4(1.0f);
@@ -2203,7 +2412,7 @@ int main(void)
 				1.0f);
 		}// end ball for
 
-		for (int j = 0; j < ::g_vec_pBallObjects.size(); j++)
+		for (int j = 0; j < ::g_vec_pPlayerObjects.size(); j++)
 		{
 			/*if (g_vec_pBallObjects.at(j)->positionXYZ.y < 101)
 			{
@@ -2215,17 +2424,17 @@ int main(void)
 			//	Ramps (for balls)
 			//*************************************
 
-			for (int k = 0; k < ::g_vec_pRampObjects.size(); k++)
+			for (int k = 0; k < ::g_vec_pGameObjects.size(); k++)
 			{
 				glm::vec3 closestPoint = glm::vec3(0.0f, 0.0f, 0.0f);
 				cPhysics::sPhysicsTriangle closestTriangle;
 
-				glm::mat4 matWorld = calculateWorldMatrix(g_vec_pRampObjects.at(k));
+				glm::mat4 matWorld = calculateWorldMatrix(g_vec_pGameObjects.at(k));
 
 				cMesh transformedMesh;
 				pPhsyics->CalculateTransformedMesh(meshVec.at(6), matWorld, transformedMesh);
 
-				pPhsyics->GetClosestTriangleToPoint(g_vec_pBallObjects.at(j)->getPositionXYZ(), transformedMesh, closestPoint, closestTriangle);
+				pPhsyics->GetClosestTriangleToPoint(g_vec_pPlayerObjects.at(j)->getPositionXYZ(), transformedMesh, closestPoint, closestTriangle);
 
 				// Highlight the triangle that I'm closest to
 				pDebugRenderer->addTriangle(closestTriangle.verts[0],
@@ -2247,10 +2456,11 @@ int main(void)
 					glm::vec3(1.0f, 1.0f, 0.0f));
 
 				// Are we hitting the triangle? 
-				float distance = glm::length(g_vec_pBallObjects.at(j)->getPositionXYZ() - closestPoint);
+				float distance = glm::length(g_vec_pPlayerObjects.at(j)->getPositionXYZ() - closestPoint);
 
-				if (distance <= g_vec_pBallObjects.at(j)->get_SPHERE_radius())
+				if (distance <= g_vec_pPlayerObjects.at(j)->get_SPHERE_radius())
 				{
+					g_vec_pPlayerObjects.at(j)->setObjectColourRGBA(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 					//if (k == 0)
 					//{
 					//	g_vec_pBallObjects.at(j)->inverseMass = 0.0f;
@@ -2264,25 +2474,25 @@ int main(void)
 					// But, that's not a big problem.
 
 					// 1. Calculate vector from centre of sphere to closest point
-					glm::vec3 vecSphereToClosestPoint = closestPoint - g_vec_pBallObjects.at(j)->getPositionXYZ();
+					glm::vec3 vecSphereToClosestPoint = closestPoint - g_vec_pPlayerObjects.at(j)->getPositionXYZ();
 
 					// 2. Get the length of this vector
 					float centreToContractDistance = glm::length(vecSphereToClosestPoint);
 
 					// 3. Create a vector from closest point to radius
-					float lengthPositionAdjustment = g_vec_pBallObjects.at(j)->get_SPHERE_radius() - centreToContractDistance;
+					float lengthPositionAdjustment = g_vec_pPlayerObjects.at(j)->get_SPHERE_radius() - centreToContractDistance;
 
 					// 4. Sphere is moving in the direction of the velocity, so 
 					//    we want to move the sphere BACK along this velocity vector
-					glm::vec3 vecDirection = glm::normalize(g_vec_pBallObjects.at(j)->getVelocity());
+					glm::vec3 vecDirection = glm::normalize(g_vec_pPlayerObjects.at(j)->getVelocity());
 
 					glm::vec3 vecPositionAdjust = (-vecDirection) * lengthPositionAdjustment;
 
 					// 5. Reposition sphere 
-					g_vec_pBallObjects.at(j)->setPositionXYZ(g_vec_pBallObjects.at(j)->getPositionXYZ() + (vecPositionAdjust));
+					g_vec_pPlayerObjects.at(j)->setPositionXYZ(g_vec_pPlayerObjects.at(j)->getPositionXYZ() + (vecPositionAdjust));
 
-					glm::vec3 velocityVector = glm::normalize(g_vec_pBallObjects.at(j)->getVelocity());
-					float gravY = (-g_vec_pBallObjects.at(j)->getVelocity().y) * 0.25f;
+					glm::vec3 velocityVector = glm::normalize(g_vec_pPlayerObjects.at(j)->getVelocity());
+					float gravY = (-g_vec_pPlayerObjects.at(j)->getVelocity().y) * 0.25f;
 					glm::vec3 gravity = glm::vec3(0.0f, gravY, 0.0f);
 
 					// closestTriangle.normal
@@ -2303,7 +2513,7 @@ int main(void)
 					// Change the direction of the ball (the bounce off the triangle)
 
 					// Get lenght of the velocity vector
-					float speed = glm::length(g_vec_pBallObjects.at(j)->getVelocity());
+					float speed = glm::length(g_vec_pPlayerObjects.at(j)->getVelocity());
 
 					/*if (g_vec_pBallObjects.at(j)->velocity.y * -1 < 1 && !onPlatform)
 					{
@@ -2312,7 +2522,7 @@ int main(void)
 					}
 					if (!onPlatform)
 					{*/
-					g_vec_pBallObjects.at(j)->setVelocity((reflectionVec * speed) - gravity);
+					g_vec_pPlayerObjects.at(j)->setVelocity((reflectionVec * speed) - gravity);
 					//}
 					/*else if (onPlatform && properPlatformYPosition != 0.0f)
 					{
@@ -2324,7 +2534,7 @@ int main(void)
 				pPhsyics->TestForCollisions(::g_vec_pGameObjects);
 				pPhsyics->TestForCollisions(::g_vec_pWallObjects);
 				pPhsyics->TestForCollisions(::g_vec_pRampObjects);
-				pPhsyics->TestForCollisions(::g_vec_pBallObjects);
+				pPhsyics->TestForCollisions(::g_vec_pPlayerObjects);
 
 				//{// Draw closest point
 				//	glm::mat4 matModel = glm::mat4(1.0f);
@@ -2338,17 +2548,17 @@ int main(void)
 
 
 				// How far did we penetrate the surface?
-				glm::vec3 CentreToClosestPoint = g_vec_pBallObjects.at(j)->getPositionXYZ() - closestPoint;
+				glm::vec3 CentreToClosestPoint = g_vec_pPlayerObjects.at(j)->getPositionXYZ() - closestPoint;
 
 				// Direction that ball is going is normalized velocity
-				glm::vec3 directionBall = glm::normalize(g_vec_pBallObjects.at(j)->getVelocity());	// 1.0f
+				glm::vec3 directionBall = glm::normalize(g_vec_pPlayerObjects.at(j)->getVelocity());	// 1.0f
 
 				// Calcualte direction to move it back the way it came from
 				glm::vec3 oppositeDirection = -directionBall;				// 1.0f
 
 				float distanceToClosestPoint = glm::length(CentreToClosestPoint);
 
-				pDebugRenderer->addLine(g_vec_pBallObjects.at(j)->getPositionXYZ(),
+				pDebugRenderer->addLine(g_vec_pPlayerObjects.at(j)->getPositionXYZ(),
 					closestPoint,
 					glm::vec3(0.0f, 1.0f, 0.0f),
 					1.0f);
@@ -2367,7 +2577,7 @@ int main(void)
 				cMesh transformedMesh;
 				pPhsyics->CalculateTransformedMesh(meshVec.at(5), matWorld, transformedMesh);
 
-				pPhsyics->GetClosestTriangleToPoint(g_vec_pBallObjects.at(j)->getPositionXYZ(), transformedMesh, closestPoint, closestTriangle);
+				pPhsyics->GetClosestTriangleToPoint(g_vec_pPlayerObjects.at(j)->getPositionXYZ(), transformedMesh, closestPoint, closestTriangle);
 
 				// Highlight the triangle that I'm closest to
 				pDebugRenderer->addTriangle(closestTriangle.verts[0],
@@ -2389,15 +2599,15 @@ int main(void)
 					glm::vec3(1.0f, 1.0f, 0.0f));
 
 				// Are we hitting the triangle? 
-				float distance = glm::length(g_vec_pBallObjects.at(j)->getPositionXYZ() - closestPoint);
+				float distance = glm::length(g_vec_pPlayerObjects.at(j)->getPositionXYZ() - closestPoint);
 
-				if (distance <= g_vec_pBallObjects.at(j)->get_SPHERE_radius())
+				if (distance <= g_vec_pPlayerObjects.at(j)->get_SPHERE_radius())
 				{
-					if (k == 3)
-					{
-						g_vec_pBallObjects.at(j)->setInverseMass(0.0f);
-						g_vec_pBallObjects.at(j)->setPositionXYZ(glm::vec3(0.0f, 0.0f, 0.0f));
-					}
+					//if (k == 3)
+					//{
+					//	g_vec_pBallObjects.at(j)->setInverseMass(0.0f);
+					//	g_vec_pBallObjects.at(j)->setPositionXYZ(glm::vec3(0.0f, 0.0f, 0.0f));
+					//}
 
 					// ************************************************************************
 
@@ -2406,25 +2616,25 @@ int main(void)
 					// But, that's not a big problem.
 
 					// 1. Calculate vector from centre of sphere to closest point
-					glm::vec3 vecSphereToClosestPoint = closestPoint - g_vec_pBallObjects.at(j)->getPositionXYZ();
+					glm::vec3 vecSphereToClosestPoint = closestPoint - g_vec_pPlayerObjects.at(j)->getPositionXYZ();
 
 					// 2. Get the length of this vector
 					float centreToContractDistance = glm::length(vecSphereToClosestPoint);
 
 					// 3. Create a vector from closest point to radius
-					float lengthPositionAdjustment = g_vec_pBallObjects.at(j)->get_SPHERE_radius() - centreToContractDistance;
+					float lengthPositionAdjustment = g_vec_pPlayerObjects.at(j)->get_SPHERE_radius() - centreToContractDistance;
 
 					// 4. Sphere is moving in the direction of the velocity, so 
 					//    we want to move the sphere BACK along this velocity vector
-					glm::vec3 vecDirection = glm::normalize(g_vec_pBallObjects.at(j)->getVelocity());
+					glm::vec3 vecDirection = glm::normalize(g_vec_pPlayerObjects.at(j)->getVelocity());
 
 					glm::vec3 vecPositionAdjust = (-vecDirection) * lengthPositionAdjustment;
 
 					// 5. Reposition sphere 
-					g_vec_pBallObjects.at(j)->setPositionXYZ(g_vec_pBallObjects.at(j)->getPositionXYZ() + (vecPositionAdjust));
+					g_vec_pPlayerObjects.at(j)->setPositionXYZ(g_vec_pPlayerObjects.at(j)->getPositionXYZ() + (vecPositionAdjust));
 
-					glm::vec3 velocityVector = glm::normalize(g_vec_pBallObjects.at(j)->getVelocity());
-					float gravY = (-g_vec_pBallObjects.at(j)->getVelocity().y) * 0.25f;
+					glm::vec3 velocityVector = glm::normalize(g_vec_pPlayerObjects.at(j)->getVelocity());
+					float gravY = (-g_vec_pPlayerObjects.at(j)->getVelocity().y) * 0.25f;
 					glm::vec3 gravity = glm::vec3(0.0f, gravY, 0.0f);
 
 					// closestTriangle.normal
@@ -2445,7 +2655,7 @@ int main(void)
 					// Change the direction of the ball (the bounce off the triangle)
 
 					// Get lenght of the velocity vector
-					float speed = glm::length(g_vec_pBallObjects.at(j)->getVelocity());
+					float speed = glm::length(g_vec_pPlayerObjects.at(j)->getVelocity());
 
 					/*if (g_vec_pBallObjects.at(j)->velocity.y * -1 < 1 && !onPlatform)
 					{
@@ -2454,7 +2664,7 @@ int main(void)
 					}
 					if (!onPlatform)
 					{*/
-					g_vec_pBallObjects.at(j)->setVelocity((reflectionVec * speed) - gravity);
+					g_vec_pPlayerObjects.at(j)->setVelocity((reflectionVec * speed) - gravity);
 					//}
 					/*else if (onPlatform && properPlatformYPosition != 0.0f)
 					{
@@ -2466,7 +2676,7 @@ int main(void)
 				pPhsyics->TestForCollisions(::g_vec_pGameObjects);
 				pPhsyics->TestForCollisions(::g_vec_pWallObjects);
 				pPhsyics->TestForCollisions(::g_vec_pRampObjects);
-				pPhsyics->TestForCollisions(::g_vec_pBallObjects);
+				pPhsyics->TestForCollisions(::g_vec_pPlayerObjects);
 
 				//{// Draw closest point
 				//	glm::mat4 matModel = glm::mat4(1.0f);
@@ -2480,17 +2690,17 @@ int main(void)
 
 
 				// How far did we penetrate the surface?
-				glm::vec3 CentreToClosestPoint = g_vec_pBallObjects.at(j)->getPositionXYZ() - closestPoint;
+				glm::vec3 CentreToClosestPoint = g_vec_pPlayerObjects.at(j)->getPositionXYZ() - closestPoint;
 
 				// Direction that ball is going is normalized velocity
-				glm::vec3 directionBall = glm::normalize(g_vec_pBallObjects.at(j)->getVelocity());	// 1.0f
+				glm::vec3 directionBall = glm::normalize(g_vec_pPlayerObjects.at(j)->getVelocity());	// 1.0f
 
 				// Calcualte direction to move it back the way it came from
 				glm::vec3 oppositeDirection = -directionBall;				// 1.0f
 
 				float distanceToClosestPoint = glm::length(CentreToClosestPoint);
 
-				pDebugRenderer->addLine(g_vec_pBallObjects.at(j)->getPositionXYZ(),
+				pDebugRenderer->addLine(g_vec_pPlayerObjects.at(j)->getPositionXYZ(),
 					closestPoint,
 					glm::vec3(0.0f, 1.0f, 0.0f),
 					1.0f);
@@ -2861,6 +3071,15 @@ iObject* pFindObjectByFriendlyName(std::string name)
 		{
 			// Found it!!
 			return ::g_vec_pGameObjects[index];
+		}
+	}
+	for (unsigned int index = 0;
+		index != g_vec_pPlayerObjects.size(); index++)
+	{
+		if (::g_vec_pPlayerObjects[index]->getFriendlyName() == name)
+		{
+			// Found it!!
+			return ::g_vec_pPlayerObjects[index];
 		}
 	}
 	for (unsigned int index = 0;
